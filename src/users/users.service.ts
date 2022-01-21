@@ -1,17 +1,17 @@
-import { Model } from 'mongoose';
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument } from '../schemas/user.schema';
-import { UserDto } from './dto/user.dto';
-import { userConstants } from './constants';
 import * as bcrypt from 'bcrypt';
-
-
+import { Model } from 'mongoose';
+import { UserDto } from './dto/user.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from './schemas/user.schema';
+import { userConstants, errorMessages } from './constants/users.constants';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
+    
   async createUser(userDto: UserDto): Promise<User> {
     const { name, email, password  } = userDto;
 
@@ -19,7 +19,7 @@ export class UsersService {
     const existedUser = await this.getUserByEmail(email);
     if (existedUser) {
       //request conflicts with the current state of the server.
-      throw new ConflictException('User with that email already exists');
+      throw new ConflictException(errorMessages.emailExists);
     }
     //create a hashed password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -29,7 +29,7 @@ export class UsersService {
     return user.save();
   }
 
-  async getUserByEmail(email: string): Promise<User> {
+  async getUserByEmail(email: string): Promise<User|any> {
     const user = await this.userModel.findOne({ email });
     if (!user) {
       return null;
@@ -37,11 +37,11 @@ export class UsersService {
     return user;
   }
 
-  async getUserById(id: string): Promise<User> {
+  async getUserById(id: string): Promise<User|any> {
     const user = await this.userModel.findOne({ _id: id });
     //check if user is found or not
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(errorMessages.userNotFound);
     }
     return user;
   }

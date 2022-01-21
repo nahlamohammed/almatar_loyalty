@@ -1,0 +1,121 @@
+import * as dayjs from 'dayjs';
+import { Model } from 'mongoose';
+import * as mongoose from 'mongoose';
+import { UsersService } from '../users/users.service';
+import { TransferDto } from './dto/transfer.dto';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Transfer, TransferDocument } from './schemas/transfer.schema';
+import { errorMessages as userErrorMessages } from '../users/constants/users.constants';
+import { errorMessages as transferErrorMessages } from './constants/transfers.constants';
+import { Injectable, ConflictException, NotFoundException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+
+
+@Injectable()
+export class TransfersService {
+  constructor(@InjectModel(Transfer.name) private transferModel: Model<TransferDocument>,
+              private usersService: UsersService,
+              @InjectConnection() private readonly connection: mongoose.Connection,
+  ) {}
+
+  async createTransfer(fromUserId: string, toUserId: string, points: number): Promise<Transfer> {
+    const expirationDate =  dayjs().add(10, 'minute');
+    const transfer = new this.transferModel({from_user: fromUserId, to_user: toUserId, points, expiration_date: expirationDate});
+    return transfer.save();
+  }
+
+
+  async checkValidNotConfirmedTransferExists(fromUserId: string): Promise<any> {
+    const currentDate =  dayjs();
+    const notConfirmedtransfer = await this.transferModel.findOne({from_user: fromUserId, is_confirmed: false, expiration_date: { $gte: currentDate }});
+    if(notConfirmedtransfer){
+      return true;
+    }
+    return false;
+  }
+
+
+  async transferPoints(transferDto: TransferDto, loggedInUserId: string): Promise<any> {
+    const loggedInUser = await this.usersService.getUserById(loggedInUserId);
+    if(loggedInUser.email === transferDto.to_user_email){
+      //request conflicts with the current state of the server.
+      throw new ConflictException(userErrorMessages.transferNotAllowed);
+    }
+
+    //check the target user exists or not
+    const toUser = await this.usersService.getUserByEmail(transferDto.to_user_email);
+    if (!toUser) {
+      throw new NotFoundException(userErrorMessages.userNotFound);
+    }
+
+    //validate user points balance
+    if(transferDto.points > loggedInUser.points){
+      throw new ConflictException(userErrorMessages.pointsBalanceNotEnough);
+    }
+
+    // Assumption: no overlapped transfers can be done. 
+    // The first transfer must be completely done either by confirmation
+    // or by expiration in order to be able to make the second transfer
+    const notConfirmedTransferExists = await this.checkValidNotConfirmedTransferExists(loggedInUser._id);
+    if(notConfirmedTransferExists){
+      //request conflicts with the current state of the server.
+      throw new ConflictException(transferErrorMessages.notConfirmedTransferFound);
+    }
+
+    const transfer = await this.createTransfer(loggedInUser._id, toUser._id, transferDto.points);
+    return transfer;
+  }
+
+
+  async confirmTransfer(transferId: string, userId:string): Promise<boolean> {
+    const transfer = await this.transferModel.findOne({_id : transferId});
+    //check transfer exists or not
+    if(!transfer){
+      throw new NotFoundException(transferErrorMessages.transferNotFound);
+    }
+
+    //check transfer belongs to this user or not
+    if(userId !== transfer.from_user.toString()){
+      throw new ForbiddenException(transferErrorMessages.transferDoesNotBelongToUser);
+    }
+
+    //check transfer confired before or not
+    if(transfer.is_confirmed){
+      throw new ForbiddenException(transferErrorMessages.transferIsConfirmed);
+    }
+
+    //check transfer is expired or not
+    const currentDate = dayjs();
+    const transferIsExpired = dayjs(transfer.expiration_date).isBefore(currentDate);
+    if(transferIsExpired){
+      throw new ConflictException(transferErrorMessages.transferIsExpired);
+    }
+    
+    //confirm the transfer
+    const session = await this.connection.startSession();
+    await session.withTransaction(async () => {
+        //confirm transfer
+        transfer.is_confirmed = true;
+        await transfer.save();
+        //subtract points from user
+        const fromUser = await this.usersService.getUserById(userId);
+        fromUser.points = Number(fromUser.points) - Number(transfer.points);
+        await fromUser.save();
+        //add points to target user
+        const toUser = await this.usersService.getUserById(transfer.to_user.toString());
+        toUser.points = Number(toUser.points) + Number(transfer.points);
+        await toUser.save();
+    });
+   
+    session.endSession();
+    return true;
+
+  }
+  
+  async getUserTransfers(fromUserId: string, loggedInUserId: string): Promise<any> {
+    if(fromUserId !== loggedInUserId){
+      throw new UnauthorizedException(userErrorMessages.unauthorizedccess);
+    }
+    return await this.transferModel.find({from_user: fromUserId});
+  }
+
+}

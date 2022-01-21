@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, Length, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, Length, IsString, IsMongoId } from 'class-validator';
 
 export class UserDto {
     @IsNotEmpty()
@@ -12,6 +12,4 @@ export class UserDto {
     @Length(8, 20)
     @IsNotEmpty()
     password: string;
-
-    points: number;
 }

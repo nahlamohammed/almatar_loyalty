@@ -4,23 +4,23 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from '../auth/local-auth.guard';
 
 
-@Controller()
+@Controller('users')
 export class AuthController {
   constructor(private readonly authService: AuthService
     ) {}
 
 
     @UseGuards(LocalAuthGuard)
-    @Post('auth/login')
+    @Post('actions/auth')
     async login(@Request() req) {
       // Passport automatically creates a user object, 
-      //based on the value we return from the validate() method, 
+      // based on the value we return from the validate() method, 
       // and assigns it to the Request object as req.user. 
       return this.authService.login(req.user);
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('me')
+    @Get('actions/me')
     getMe(@Request() req) {
       return req.user;
     }
