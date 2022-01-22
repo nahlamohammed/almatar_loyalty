@@ -8,7 +8,11 @@ points to each other.
 
 * [Framework](#framework)
 
+* [Technologies](#technologies)
+
 * [Installation](#installation)
+
+* [Configuration](#configuration)
 
 * [Execution](#execution)
 
@@ -20,11 +24,22 @@ points to each other.
 [Nest](https://docs.nestjs.com/) (NestJS) is a framework for building efficient, scalable Node.js server-side applications. It uses progressive JavaScript, is built with and fully supports TypeScript 
 
 
+
+## Technologies
+
+Node.js, TypeScrpt and MongoDB
+
+
 ## Installation
 
 ```bash
 $ npm install
 ```
+
+
+## Configuration
+
+Create .env file in the project root directory.A sample .env file looks something like [this](https://docs.google.com/document/d/1oCHL-XKeyekATPFrcyUUUT7ZV6dRx2IgiF_jJ86rNYw/edit?usp=sharing).
 
 
 ## Execution
@@ -36,7 +51,7 @@ $ npm run start
 
 ## Routes
 
-[RESTful API Postman Collection](https://drive.google.com/drive/folders/1_6NN06JFJD_e4OLJvyNknQ0BT1vIplOH?usp=sharing)
+[RESTful API Postman Collection](https://drive.google.com/file/d/1Lp0NJGZnDeSjtsIgRyhwKyt2iErfbTx3/view?usp=sharing)
 
 | Feature                             | Route                                                       | Method |
 |-------------------------------------|-------------------------------------------------------------|--------|
