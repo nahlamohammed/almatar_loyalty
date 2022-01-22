@@ -3,7 +3,7 @@ import { Model } from 'mongoose';
 import { UserDto } from './dto/user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './schemas/user.schema';
-import { userConstants, errorMessages } from './constants/users.constants';
+import { USER_CONSTANTS, ERROR_MESSAGES } from './constants/users.constants';
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 
 @Injectable()
@@ -19,13 +19,13 @@ export class UsersService {
     const existedUser = await this.getUserByEmail(email);
     if (existedUser) {
       //request conflicts with the current state of the server.
-      throw new ConflictException(errorMessages.emailExists);
+      throw new ConflictException(ERROR_MESSAGES.EMAIL_EXISTS);
     }
     //create a hashed password
     const hashedPassword = await bcrypt.hash(password, 10);
     
     //create the user
-    const user = new this.userModel({ name, email, password: hashedPassword, points: userConstants.giftPoints });
+    const user = new this.userModel({ name, email, password: hashedPassword, points: USER_CONSTANTS.GIFT_POINTS });
     return user.save();
   }
 
@@ -41,7 +41,7 @@ export class UsersService {
     const user = await this.userModel.findOne({ _id: id });
     //check if user is found or not
     if (!user) {
-      throw new NotFoundException(errorMessages.userNotFound);
+      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
     return user;
   }

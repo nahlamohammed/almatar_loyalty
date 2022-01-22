@@ -5,8 +5,8 @@ import { UsersService } from '../users/users.service';
 import { TransferDto } from './dto/transfer.dto';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Transfer, TransferDocument } from './schemas/transfer.schema';
-import { errorMessages as userErrorMessages } from '../users/constants/users.constants';
-import { errorMessages as transferErrorMessages } from './constants/transfers.constants';
+import { ERROR_MESSAGES as USER_ERROR_MESSAGES } from '../users/constants/users.constants';
+import { ERROR_MESSAGES as TRANSFER_ERROR_MESSAGES } from './constants/transfers.constants';
 import { Injectable, ConflictException, NotFoundException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 
 
@@ -38,18 +38,18 @@ export class TransfersService {
     const loggedInUser = await this.usersService.getUserById(loggedInUserId);
     if(loggedInUser.email === transferDto.to_user_email){
       //request conflicts with the current state of the server.
-      throw new ConflictException(userErrorMessages.transferNotAllowed);
+      throw new ConflictException(USER_ERROR_MESSAGES.TRANSFER_NOT_ALLOWED);
     }
 
     //check the target user exists or not
     const toUser = await this.usersService.getUserByEmail(transferDto.to_user_email);
     if (!toUser) {
-      throw new NotFoundException(userErrorMessages.userNotFound);
+      throw new NotFoundException(USER_ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
     //validate user points balance
     if(transferDto.points > loggedInUser.points){
-      throw new ConflictException(userErrorMessages.pointsBalanceNotEnough);
+      throw new ConflictException(USER_ERROR_MESSAGES.POINTS_BALANCE_NOT_ENOUGH);
     }
 
     // Assumption: no overlapped transfers can be done. 
@@ -58,7 +58,7 @@ export class TransfersService {
     const notConfirmedTransferExists = await this.checkValidNotConfirmedTransferExists(loggedInUser._id);
     if(notConfirmedTransferExists){
       //request conflicts with the current state of the server.
-      throw new ConflictException(transferErrorMessages.notConfirmedTransferFound);
+      throw new ConflictException(TRANSFER_ERROR_MESSAGES.NOT_CONFIRMED_TRANSFER_FOUND);
     }
 
     const transfer = await this.createTransfer(loggedInUser._id, toUser._id, transferDto.points);
@@ -70,24 +70,24 @@ export class TransfersService {
     const transfer = await this.transferModel.findOne({_id : transferId});
     //check transfer exists or not
     if(!transfer){
-      throw new NotFoundException(transferErrorMessages.transferNotFound);
+      throw new NotFoundException(TRANSFER_ERROR_MESSAGES.TRANSFER_NOT_FOUND);
     }
 
     //check transfer belongs to this user or not
     if(userId !== transfer.from_user.toString()){
-      throw new ForbiddenException(transferErrorMessages.transferDoesNotBelongToUser);
+      throw new ForbiddenException(TRANSFER_ERROR_MESSAGES.TRANSFER_DOES_NOT_BELONG_TO_USER);
     }
 
     //check transfer confired before or not
     if(transfer.is_confirmed){
-      throw new ForbiddenException(transferErrorMessages.transferIsConfirmed);
+      throw new ForbiddenException(TRANSFER_ERROR_MESSAGES.TRANSFER_IS_CONFIRMED);
     }
 
     //check transfer is expired or not
     const currentDate = dayjs();
     const transferIsExpired = dayjs(transfer.expiration_date).isBefore(currentDate);
     if(transferIsExpired){
-      throw new ConflictException(transferErrorMessages.transferIsExpired);
+      throw new ConflictException(TRANSFER_ERROR_MESSAGES.TRANSFER_IS_EXPIRED);
     }
     
     //confirm the transfer
@@ -113,7 +113,7 @@ export class TransfersService {
   
   async getUserTransfers(fromUserId: string, loggedInUserId: string): Promise<any> {
     if(fromUserId !== loggedInUserId){
-      throw new UnauthorizedException(userErrorMessages.unauthorizedccess);
+      throw new UnauthorizedException(USER_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
     }
     return await this.transferModel.find({from_user: fromUserId});
   }

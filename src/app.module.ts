@@ -12,7 +12,7 @@ import { TransfersModule } from './transfers/transfers.module';
   })
     , MongooseModule.forRootAsync({
       useFactory: async (configService: ConfigService) => ({
-        uri: `mongodb://${configService.get('DB_USER')}:${configService.get('DB_PASS')}@${configService.get('DB_URI')}:${configService.get('DB_PORT')}/${configService.get('DB_NAME')}`,
+        uri: `mongodb://${configService.get('DB_URI')}:${configService.get('DB_PORT')}/${configService.get('DB_NAME')}`,
       }),
       inject: [ConfigService],
     }),
