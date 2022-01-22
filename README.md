@@ -39,7 +39,7 @@ $ npm install
 
 ## Configuration
 
-Create .env file in the project root directory.A sample .env file looks something like [this](https://docs.google.com/document/d/1oCHL-XKeyekATPFrcyUUUT7ZV6dRx2IgiF_jJ86rNYw/edit?usp=sharing).
+Create .env file in the project root directory. A sample .env file looks something like [this](https://docs.google.com/document/d/1oCHL-XKeyekATPFrcyUUUT7ZV6dRx2IgiF_jJ86rNYw/edit?usp=sharing).
 
 
 ## Execution
